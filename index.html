@@ -1,0 +1,913 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Papan Progres Terjemahan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<style id="app-css">/*@@CSS-BEGIN@@*/
+/* Layout: lembar naskah manga. Kisi biru non-foto di latar, tiap judul jadi panel berbingkai tinta dengan sampul screentone dan jalur tahap kerja (terjemah, cleaning, typeset, QC). */
+:root {
+  --bg: #F3F6FB;
+  --panel: #FDFEFF;
+  --ink: #151A33;
+  --ink-soft: #4B5372;
+  --rule: #C7D1E6;
+  --grid: #DCE8F6;
+  --accent: #2E3FA8;
+  --proses-fg: #8A5A00;
+  --proses-bg: #FCEBC2;
+  --tunda-fg: #A12A3B;
+  --tunda-bg: #FADCE0;
+  --siap-fg: #17713F;
+  --siap-bg: #DDF1E4;
+  --font-display: "Dela Gothic One", "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1226;
+    --panel: #151B35;
+    --ink: #E8ECF8;
+    --ink-soft: #A3ACCB;
+    --rule: #2A3358;
+    --grid: #171F45;
+    --accent: #9FB1FF;
+    --proses-fg: #F2C566;
+    --proses-bg: #3A2C0B;
+    --tunda-fg: #FF9CAA;
+    --tunda-bg: #3E1620;
+    --siap-fg: #7FDCA4;
+    --siap-bg: #15321F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1226;
+  --panel: #151B35;
+  --ink: #E8ECF8;
+  --ink-soft: #A3ACCB;
+  --rule: #2A3358;
+  --grid: #171F45;
+  --accent: #9FB1FF;
+  --proses-fg: #F2C566;
+  --proses-bg: #3A2C0B;
+  --tunda-fg: #FF9CAA;
+  --tunda-bg: #3E1620;
+  --siap-fg: #7FDCA4;
+  --siap-bg: #15321F;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font: 400 15px/1.55 var(--font-body);
+  padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin-inline: auto; }
+
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Kepala halaman */
+h1 {
+  font: 400 clamp(28px, 7vw, 42px)/1.12 var(--font-display);
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+.intro { max-width: 52ch; margin: 12px 0 0; color: var(--ink-soft); }
+.stamp {
+  margin: 14px 0 0;
+  font: 500 12px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Tombol */
+.btn {
+  display: inline-block;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  font: 700 14px/1.2 var(--font-body);
+  cursor: pointer;
+}
+.btn.solid, .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.btn.danger { color: var(--tunda-fg); border-color: var(--tunda-fg); }
+.btn.small { min-height: 32px; padding: 5px 10px; font-size: 13px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.filebtn { position: relative; }
+.filebtn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.fine { margin: 0; font-size: 12px; color: var(--ink-soft); }
+
+/* Animasi kecil: tombol terangkat dengan bayangan tinta, ditekan kembali rata. */
+.btn, .tab { transition: transform 0.14s cubic-bezier(0.3, 1.5, 0.5, 1), box-shadow 0.14s ease; }
+.read::after { content: " \2192"; display: inline-block; transition: transform 0.16s ease; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .btn:not(:disabled):hover, .tab:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--ink); }
+  .btn.solid:not(:disabled):hover, .btn[aria-pressed="true"]:hover, .tab[aria-current="page"]:hover { box-shadow: 3px 3px 0 var(--accent); }
+  .btn.danger:not(:disabled):hover { box-shadow: 3px 3px 0 var(--tunda-fg); }
+  .read:hover::after { transform: translateX(4px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn:not(:disabled):active, .tab:active { transform: translate(1px, 1px); box-shadow: 0 0 0 var(--ink); }
+  .fill { animation: isi 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+}
+@keyframes isi { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* Bilah atur (hanya untuk pemilik) */
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; }
+.bar .fine { flex: 1 1 100%; }
+.pub {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 12px;
+  background: var(--proses-bg);
+  color: var(--proses-fg);
+  border: 1.5px solid var(--proses-fg);
+}
+.pub p { margin: 0; flex: 1 1 220px; font-size: 14px; }
+
+/* Filter status sekaligus ringkasan */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 24px;
+}
+.tabs.locked { opacity: 0.5; pointer-events: none; }
+.tab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1.5px solid var(--ink);
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.tab .n {
+  font: 500 13px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+.tab[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.tab[aria-current="page"] .n { color: inherit; }
+.hint { margin: 12px 0 0; font-size: 13px; color: var(--ink-soft); }
+
+/* Daftar judul */
+.list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; }
+.item {
+  --c: var(--ink);
+  --cb: var(--rule);
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1.5px solid var(--ink);
+}
+.item[data-s="proses"] { --c: var(--proses-fg); --cb: var(--proses-bg); }
+.item[data-s="tertunda"] { --c: var(--tunda-fg); --cb: var(--tunda-bg); }
+.item[data-s="siap"] { --c: var(--siap-fg); --cb: var(--siap-bg); }
+
+.cover {
+  position: relative;
+  width: 72px;
+  aspect-ratio: 5 / 7;
+  max-width: 100%;
+  border: 1.5px solid var(--ink);
+  background: var(--bg);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  align-self: start;
+}
+.cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, var(--accent) 1.3px, transparent 1.8px) 0 0 / 6px 6px;
+  -webkit-mask-image: linear-gradient(150deg, #000 0%, transparent 78%);
+  mask-image: linear-gradient(150deg, #000 0%, transparent 78%);
+}
+.cover span {
+  position: relative;
+  font: 400 28px/1 var(--font-display);
+  color: var(--ink);
+  text-shadow: 0 0 6px var(--bg), 0 0 2px var(--bg);
+}
+.cover .pic {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.main { min-width: 0; }
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+.title {
+  flex: 1 1 10em;
+  min-width: 0;
+  margin: 0;
+  font: 700 17px/1.3 var(--font-body);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.by {
+  margin: 4px 0 0;
+  font: 400 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 7px;
+  background: var(--cb);
+  color: var(--c);
+  font: 500 12px/1.6 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pill svg { flex: none; }
+
+.prog { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.track { position: relative; flex: 1 1 auto; min-width: 0; height: 10px; background: var(--rule); }
+.fill { position: absolute; inset: 0 auto 0 0; background: var(--c); }
+.ticks::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(100% / var(--total) - 1px),
+    var(--panel) calc(100% / var(--total) - 1px),
+    var(--panel) calc(100% / var(--total))
+  );
+}
+/* Total chapter belum diketahui: satu kotak per chapter, ujung kanan dibiarkan terbuka */
+.open { background: repeating-linear-gradient(90deg, var(--rule) 0 8px, transparent 8px 10px); }
+.open .fill { background: repeating-linear-gradient(90deg, var(--c) 0 8px, transparent 8px 10px); }
+.count {
+  flex: none;
+  font: 500 13px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cap { margin: 12px 0 0; font-size: 13px; color: var(--ink-soft); }
+.pipe {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.pipe li {
+  display: grid;
+  gap: 5px;
+  font: 500 11px/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.pipe li::before { content: ""; height: 5px; background: var(--rule); }
+.pipe li.done::before { background: var(--c); }
+.pipe li.now { color: var(--ink); font-weight: 500; }
+.pipe li.now::before {
+  background: repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px), var(--rule);
+}
+
+.note { margin: 10px 0 0; font-size: 14px; }
+.note strong { font-weight: 700; }
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 12px;
+  font: 400 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.acts { display: inline-flex; align-items: center; gap: 12px; }
+.read {
+  color: var(--accent);
+  font: 700 14px/1.4 var(--font-body);
+  letter-spacing: 0;
+  text-decoration: none;
+  border-bottom: 2px solid var(--accent);
+}
+
+.empty {
+  padding: 20px 14px;
+  border: 1.5px dashed var(--ink-soft);
+  background: var(--panel);
+  color: var(--ink-soft);
+}
+
+/* Formulir ubah judul */
+.editor { grid-column: 1 / -1; display: grid; gap: 14px; min-width: 0; }
+.ed-title { margin: 0; font: 700 17px/1.3 var(--font-body); }
+.ed-cover { display: flex; gap: 14px; align-items: flex-start; }
+.ed-cover .cover { flex: none; }
+.ed-cover-act { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.ed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.fld { display: grid; gap: 4px; min-width: 0; }
+.fld.wide { grid-column: 1 / -1; }
+.fld > span {
+  font: 500 12px/1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.fld input:not([type="checkbox"]), .fld select, .fld textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.4 var(--font-body);
+}
+.fld textarea { resize: vertical; }
+.fld input:disabled, .fld select:disabled { opacity: 0.5; }
+.chk { display: flex; align-items: center; gap: 10px; }
+.chk input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+.chk > span { font: 400 15px/1.4 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.ed-msg { margin: 0; min-height: 1.4em; font-size: 14px; }
+.ed-msg.err { color: var(--tunda-fg); }
+.ed-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+.ed-confirm { display: grid; gap: 10px; padding: 12px; border: 1.5px dashed var(--tunda-fg); }
+.ed-confirm p { margin: 0; }
+/*@@CSS-END@@*/</style>
+</head><body>
+<div class="wrap" id="app"></div>
+<script type="application/json" id="app-data">{"v":1,"manga":[
+{"id":"m1","judul":"Awairo Emaki","karya":"Fujitobi","status":"siap","rilis":5,"total":null,"jenis":"","tahap":"","catatan":"","link":"","sampul":"","diperbarui":"2026-10-31"},
+{"id":"m2","judul":"Tokubetsu na Nichijou","karya":"Fujitobi","status":"siap","rilis":1,"total":1,"jenis":"oneshot","tahap":"","catatan":"","link":"","sampul":"","diperbarui":"2026-10-31"},
+{"id":"m3","judul":"Uruwashiki Shuen","karya":"Fujitobi","status":"siap","rilis":1,"total":1,"jenis":"oneshot","tahap":"","catatan":"","link":"","sampul":"","diperbarui":"2026-10-31"},
+{"id":"m4","judul":"Itsuka, Kazoku ni Naru made","karya":"Fujitobi","status":"proses","rilis":5,"total":null,"jenis":"","tahap":"","catatan":"","link":"","sampul":"","diperbarui":"2026-10-31"},
+{"id":"m5","judul":"Shota oni","karya":"Nakayama Miyuki","status":"proses","rilis":10,"total":null,"jenis":"","tahap":"","catatan":"","link":"","sampul":"","diperbarui":"2026-10-31"},
+{"id":"m6","judul":"Seaside Stranger Vol.2: Harukaze no Étranger","karya":"Kii Kanna","status":"tertunda","rilis":1,"total":null,"jenis":"","tahap":"","catatan":"Lagi banyak kerjaan yang menumpuk. Kemungkinan lanjut minggu depan.","link":"","sampul":"","diperbarui":"2026-10-31"},
+{"id":"m7","judul":"Kiss wa Shita kedo Tomodachi da yo na!?","karya":"HARA Peeenyo","status":"proses","rilis":0,"total":null,"jenis":"","tahap":"","catatan":"","link":"","sampul":"","diperbarui":"2026-10-31"}
+]}</script>
+<script id="app-js">/*@@JS-BEGIN@@*/
+(() => {
+  document.documentElement.lang = "id";
+
+  // Data ada di blok #app-data (satu judul satu objek). Field:
+  // id, judul, karya, status ("proses" | "tertunda" | "siap"),
+  // rilis (nomor chapter terakhir, boleh desimal untuk bonus, mis. 5.5),
+  // total (jumlah chapter utama, null = belum diketahui),
+  // sedang (chapter yang lagi dikerjakan, null = otomatis chapter berikutnya),
+  // jenis ("oneshot" atau kosong), tahap ("terjemah" | "cleaning" | "typeset" | "qc", khusus proses),
+  // catatan, link, sampul (gambar data:), diperbarui (TTTT-BB-HH).
+  let state;
+  try { state = JSON.parse(document.getElementById("app-data").textContent); } catch (e) { state = null; }
+  if (!state || !Array.isArray(state.manga)) state = { v: 1, manga: [] };
+
+  const STAGES = [["terjemah", "Terjemah"], ["cleaning", "Cleaning"], ["typeset", "Typeset"], ["qc", "QC"]];
+  const STATUS = {
+    semua: { label: "Semua", hint: "Semua judul. Yang paling baru diperbarui ada di atas." },
+    proses: { label: "Proses", hint: "Lagi dikerjakan. Chapter baru rilis satu per satu begitu selesai." },
+    tertunda: { label: "Tertunda", hint: "Berhenti sementara. Alasannya tertulis di tiap judul." },
+    siap: { label: "Siap", hint: "Sudah selesai dikerjakan dan siap rilis." }
+  };
+  const ORDER = ["semua", "proses", "tertunda", "siap"];
+  const ICON = {
+    proses: '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 1a4 4 0 0 1 0 8z" fill="currentColor"/></svg>',
+    tertunda: '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.8" y="1" width="2.3" height="8" fill="currentColor"/><rect x="5.9" y="1" width="2.3" height="8" fill="currentColor"/></svg>',
+    siap: '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.4 5.3l2.5 2.5 4.7-5.2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>'
+  };
+  const LABEL = { proses: "Proses", tertunda: "Tertunda", siap: "Siap" };
+
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  const tgl = (iso) => { const p = String(iso).split("-"); return fmt.format(new Date(+p[0], +p[1] - 1, +p[2])); };
+  const hariIni = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const urut = () => state.manga.slice().sort((a, b) => (b.diperbarui || "").localeCompare(a.diperbarui || ""));
+  const salin = (o) => JSON.parse(JSON.stringify(o));
+  // Nomor chapter: "5", "5.5" atau "5,5" (maksimal dua angka di belakang koma). NaN kalau tidak cocok.
+  const angka = (s) => { const t = String(s).trim().replace(",", "."); return /^\d+(\.\d{1,2})?$/.test(t) ? Number(t) : NaN; };
+
+  // ---- Kerangka halaman ----
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <header>
+      <h1>Papan Progres Terjemahan</h1>
+      <p class="intro">Pantau terjemahan manga yang lagi dikerjakan. Ada yang masih proses, ada yang tertunda, dan ada yang sudah siap rilis.</p>
+      <p class="stamp" id="stamp"></p>
+    </header>
+    <div class="bar" id="bar" hidden></div>
+    <nav class="tabs" id="tabs" aria-label="Filter status"></nav>
+    <p class="hint" id="hint" aria-live="polite"></p>
+    <ul class="list" id="list"></ul>`;
+  const barEl = document.getElementById("bar");
+  const tabsEl = document.getElementById("tabs");
+  const hintEl = document.getElementById("hint");
+  const listEl = document.getElementById("list");
+
+  let canEdit = false;
+  let pubApi = null;   // tersedia kalau dibuka di Claude sebagai pemilik: simpan langsung ke halaman
+  let lokal = false;   // tersedia kalau dibuka dari hosting dengan ?atur: simpan lewat unduh file baru
+  let berubah = false; // ada perubahan yang belum diunduh (khusus lokal)
+  let editMode = false;
+  let editing = null;  // id judul yang sedang diubah, atau "baru"
+
+  // ---- Tampilan baca ----
+  const hurufDepan = (j) => (Array.from(String(j || "").trim())[0] || "?").toUpperCase();
+  const gambarOk = (s) => /^data:image\/(jpeg|png|webp);base64,/.test(s || "");
+  const coverInner = (sampul, judul) =>
+    `<span>${esc(hurufDepan(judul))}</span>${gambarOk(sampul) ? `<img class="pic" src="${esc(sampul)}" alt="">` : ""}`;
+
+  function itemHTML(m) {
+    const oneshot = m.jenis === "oneshot";
+    const terbuka = !oneshot && m.total == null;
+    const total = oneshot ? 1 : terbuka ? 0 : Math.max(1, m.total);
+    const rilis = oneshot ? (m.status === "siap" ? 1 : 0) : Math.max(0, Number(m.rilis) || 0);
+    const bonus = !oneshot && !Number.isInteger(rilis) ? ", termasuk chapter bonus" : "";
+    const kata = m.status === "siap" ? "siap rilis" : "sudah rilis";
+    const trackCls = terbuka ? " open" : total <= 60 ? " ticks" : "";
+    const fillW = terbuka ? `min(100%, ${Math.ceil(rilis) * 10}px)` : `${Math.round((Math.min(rilis, total) / total) * 100)}%`;
+    const hitung = oneshot ? "Oneshot" : terbuka ? `${rilis} ch` : `${rilis}/${total} ch`;
+    const aria = oneshot ? "Oneshot" : terbuka ? `Sampai chapter ${rilis} ${kata}, total belum ditentukan` : `Sampai chapter ${rilis} dari ${total} ${kata}`;
+    const lagi = m.sedang != null ? m.sedang : Math.floor(rilis) + 1;
+    let body = "";
+
+    if (m.status === "proses") {
+      if (!oneshot && STAGES.some((s) => s[0] === m.tahap)) {
+        const idx = STAGES.findIndex((s) => s[0] === m.tahap);
+        body += `<p class="cap">Chapter ${lagi} sedang dikerjakan</p><ol class="pipe">` +
+          STAGES.map((s, i) => `<li class="${i < idx ? "done" : i === idx ? "now" : ""}"${i === idx ? ' aria-current="step"' : ""}>${s[1]}</li>`).join("") +
+          `</ol>`;
+      } else if (oneshot) {
+        body += `<p class="note">Oneshot ini masih dikerjakan.</p>`;
+      } else {
+        const sampai = rilis > 0 ? `Sudah rilis sampai chapter ${rilis}.` : "Belum ada chapter yang diupload.";
+        body += `<p class="note">${sampai}${m.sedang != null ? " Chapter " + m.sedang + " lagi dikerjakan." : ""}</p>`;
+      }
+      if (m.catatan) body += `<p class="note">${esc(m.catatan)}</p>`;
+    } else if (m.status === "tertunda") {
+      const lead = oneshot ? "Oneshot ini terhenti." : rilis > 0 ? "Terhenti di chapter " + rilis + "." : "Belum ada chapter yang rilis.";
+      body += `<p class="note"><strong>${lead}</strong> ${esc(m.catatan)}</p>`;
+    } else {
+      let teks;
+      if (oneshot) teks = "Oneshot ini sudah siap rilis.";
+      else if (rilis <= 0) teks = "Belum ada chapter yang siap rilis.";
+      else if (terbuka) teks = `Sampai chapter ${rilis} sudah siap rilis${bonus}.`;
+      else if (rilis >= total) {
+        const dasar = Number.isInteger(total) ? `Semua ${total} chapter` : `Semua chapter sampai ${total}`;
+        teks = `${dasar} sudah siap rilis${rilis > total ? ", plus chapter bonus " + rilis : ""}.`;
+      }
+      else teks = `Chapter 1 sampai ${rilis} sudah siap rilis${bonus}.`;
+      body += `<p class="note">${teks}</p>`;
+      if (m.catatan) body += `<p class="note">${esc(m.catatan)}</p>`;
+    }
+
+    const link = /^https?:\/\//.test(m.link || "")
+      ? `<a class="read" href="${esc(m.link)}" target="_blank" rel="noopener noreferrer">Baca</a>`
+      : "";
+    const ubah = editMode ? `<button type="button" class="btn small" data-act="ubah" data-id="${esc(m.id)}">Ubah</button>` : "";
+
+    return `<div class="cover" aria-hidden="true">${coverInner(m.sampul, m.judul)}</div>
+      <div class="main">
+        <div class="head">
+          <h2 class="title">${esc(m.judul)}</h2>
+          <span class="pill">${ICON[m.status] || ""}${LABEL[m.status] || esc(m.status)}</span>
+        </div>
+        ${m.karya ? `<p class="by">Karya ${esc(m.karya)}</p>` : ""}
+        <div class="prog">
+          <div class="track${trackCls}" role="img" aria-label="${esc(aria)}"><div class="fill" style="width:${fillW}"></div></div>
+          <span class="count">${hitung}</span>
+        </div>
+        ${body}
+        <div class="foot"><span>Diperbarui ${tgl(m.diperbarui || hariIni())}</span><span class="acts">${link}${ubah}</span></div>
+      </div>`;
+  }
+
+  // ---- Formulir ubah ----
+  const formHTML = (baru) => `
+    <form class="editor" id="editor" novalidate>
+      <h2 class="ed-title">${baru ? "Judul baru" : "Ubah judul"}</h2>
+      <div class="ed-cover">
+        <div class="cover" id="ed-preview" aria-hidden="true"></div>
+        <div class="ed-cover-act">
+          <label class="btn small filebtn">Pilih foto sampul<input class="file" type="file" id="f-sampul" accept="image/*"></label>
+          <button type="button" class="btn small" id="f-hapus-sampul">Hapus sampul</button>
+          <p class="fine">Foto dikecilkan otomatis, lalu disimpan di halaman ini.</p>
+        </div>
+      </div>
+      <div class="ed-grid">
+        <label class="fld wide"><span>Judul</span><input type="text" id="f-judul" autocomplete="off"></label>
+        <label class="fld wide"><span>Pengarang</span><input type="text" id="f-karya" autocomplete="off"></label>
+        <label class="fld"><span>Status</span>
+          <select id="f-status"><option value="proses">Proses</option><option value="tertunda">Tertunda</option><option value="siap">Siap</option></select>
+        </label>
+        <label class="fld"><span>Tahap kerja (Proses)</span>
+          <select id="f-tahap"><option value="">Belum diisi</option><option value="terjemah">Terjemah</option><option value="cleaning">Cleaning</option><option value="typeset">Typeset</option><option value="qc">QC</option></select>
+        </label>
+        <label class="fld"><span>Chapter terakhir</span><input type="text" id="f-rilis" inputmode="decimal" placeholder="5 atau 5.5" autocomplete="off"></label>
+        <label class="fld"><span>Total chapter</span><input type="text" id="f-total" inputmode="decimal" placeholder="Kosongkan kalau belum tahu" autocomplete="off"></label>
+        <label class="fld"><span>Lagi dikerjakan (Proses)</span><input type="text" id="f-sedang" inputmode="decimal" placeholder="Kosong = chapter berikutnya" autocomplete="off"></label>
+        <label class="fld wide chk"><input type="checkbox" id="f-oneshot"><span>Oneshot (satu chapter saja)</span></label>
+        <label class="fld wide"><span>Catatan</span><textarea id="f-catatan" rows="3"></textarea></label>
+        <label class="fld wide"><span>Link baca</span><input type="url" id="f-link" inputmode="url" placeholder="https://" autocomplete="off"></label>
+      </div>
+      <p class="fine">Chapter dan total boleh pakai titik atau koma, misalnya 5.5 atau 12.5. Berlaku untuk status Proses, Tertunda, maupun Siap.</p>
+      <p class="ed-msg" id="ed-msg" role="status"></p>
+      <div class="ed-bar">
+        <button type="submit" class="btn solid" id="f-simpan">Simpan</button>
+        <button type="button" class="btn" id="f-batal">Batal</button>
+        ${baru ? "" : '<button type="button" class="btn danger" id="f-hapus">Hapus judul</button>'}
+      </div>
+      <div class="ed-confirm" id="ed-confirm" hidden>
+        <p>Hapus judul ini dari daftar? Ini tidak bisa dibatalkan.</p>
+        <div class="ed-bar">
+          <button type="button" class="btn danger" id="f-ya-hapus">Ya, hapus</button>
+          <button type="button" class="btn" id="f-tidak">Jangan</button>
+        </div>
+      </div>
+    </form>`;
+
+  // ---- Foto sampul: dikecilkan lalu disimpan sebagai data gambar ----
+  async function bacaGambar(file) {
+    if (window.createImageBitmap) {
+      try {
+        const b = await createImageBitmap(file, { imageOrientation: "from-image" });
+        return { src: b, w: b.width, h: b.height, selesai: () => { if (b.close) b.close(); } };
+      } catch (e) { /* lanjut ke cara biasa */ }
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = url; });
+      return { src: img, w: img.naturalWidth, h: img.naturalHeight, selesai: () => URL.revokeObjectURL(url) };
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      throw e;
+    }
+  }
+  async function olahSampul(file) {
+    if (!/^image\//.test(file.type || "")) throw new Error("bukan gambar");
+    const g = await bacaGambar(file);
+    try {
+      const W = 360, H = 504; // 5:7, seperti sampul manga
+      const cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const ctx = cv.getContext("2d");
+      const target = W / H;
+      let sx = 0, sy = 0, cw = g.w, ch = g.h;
+      if (g.w / g.h > target) { cw = g.h * target; sx = (g.w - cw) / 2; } else { ch = g.w / target; sy = (g.h - ch) / 2; }
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(g.src, sx, sy, cw, ch, 0, 0, W, H);
+      return cv.toDataURL("image/jpeg", 0.8);
+    } finally {
+      g.selesai();
+    }
+  }
+
+  // ---- Menyusun halaman dari data (untuk simpan di Claude dan untuk unduh file hosting) ----
+  const MARK_CSS = ["/*@@" + "CSS-BEGIN@@*/", "/*@@" + "CSS-END@@*/"];
+  const MARK_JS = ["/*@@" + "JS-BEGIN@@*/", "/*@@" + "JS-END@@*/"];
+  const HEAD_TAGS = '<title>Papan Progres Terjemahan</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">\n';
+  const RESET = ':root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}';
+  const SKELETON = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + RESET + '</style></head><body>';
+  const antara = (teks, m) => {
+    const i = teks.indexOf(m[0]);
+    const j = teks.lastIndexOf(m[1]);
+    return i >= 0 && j > i ? teks.slice(i, j + m[1].length) : teks;
+  };
+  function susunHalaman(data, mandiri) {
+    const css = antara(document.getElementById("app-css").textContent, MARK_CSS);
+    const js = antara(document.getElementById("app-js").textContent, MARK_JS);
+    const json = JSON.stringify(data).replace(/</g, "\\u003c");
+    const isi =
+      '<style id="app-css">' + css + '</style>\n' +
+      '<div class="wrap" id="app"></div>\n' +
+      '<script type="application/json" id="app-data">' + json + '</' + 'script>\n' +
+      '<script id="app-js">' + js + '</' + 'script>';
+    if (!mandiri) return SKELETON + HEAD_TAGS + isi + '</body></html>';
+    // File mandiri untuk hosting: dokumen biasa dengan head sendiri.
+    const css2 = '<style id="app-css">' + css + '</style>\n';
+    return '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n' +
+      HEAD_TAGS + '<style>' + RESET + '</style>\n' + css2 + '</head><body>\n' +
+      isi.slice(css2.length) + '\n</body></html>';
+  }
+  function unduh() {
+    const blob = new Blob([susunHalaman(state, true)], { type: "text/html" });
+    const a = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = "index.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  const KODE_BACA_SAJA = ["not_writer", "not_granted", "not_declared", "consent_required", "capability_disabled", "capability_removed"];
+
+  // ---- Penghubung formulir ----
+  const el = (id) => document.getElementById(id);
+
+  function pasangFormulir(m, baru) {
+    const pesan = (t, salah) => { el("ed-msg").textContent = t; el("ed-msg").className = "ed-msg" + (salah ? " err" : ""); };
+    const kunci = (v) => el("editor").querySelectorAll("button").forEach((b) => { b.disabled = v; });
+    let tertunda; // sampul baru: undefined = tidak diubah, "" = dihapus, selain itu data gambar
+
+    el("f-judul").value = m.judul || "";
+    el("f-karya").value = m.karya || "";
+    el("f-status").value = m.status || "proses";
+    el("f-tahap").value = m.tahap || "";
+    el("f-rilis").value = m.jenis === "oneshot" ? "" : String(m.rilis == null ? 0 : m.rilis);
+    el("f-total").value = m.jenis === "oneshot" || m.total == null ? "" : String(m.total);
+    el("f-sedang").value = m.sedang == null ? "" : String(m.sedang);
+    el("f-oneshot").checked = m.jenis === "oneshot";
+    el("f-catatan").value = m.catatan || "";
+    el("f-link").value = m.link || "";
+
+    const sesuaikan = () => {
+      const os = el("f-oneshot").checked;
+      const prosesBiasa = !os && el("f-status").value === "proses";
+      el("f-rilis").disabled = os;
+      el("f-total").disabled = os;
+      el("f-tahap").disabled = !prosesBiasa;
+      el("f-sedang").disabled = !prosesBiasa;
+    };
+    const lihat = () => {
+      const kini = tertunda === undefined ? (m.sampul || "") : tertunda;
+      el("ed-preview").innerHTML = coverInner(kini, el("f-judul").value || m.judul);
+      el("f-hapus-sampul").hidden = !kini;
+    };
+    sesuaikan();
+    lihat();
+    el("f-oneshot").addEventListener("change", sesuaikan);
+    el("f-status").addEventListener("change", sesuaikan);
+    el("f-judul").addEventListener("input", lihat);
+
+    el("f-sampul").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      pesan("Memproses foto…");
+      try {
+        tertunda = await olahSampul(file);
+        pesan("");
+        lihat();
+      } catch (err) {
+        pesan("Foto tidak bisa dibaca. Coba foto lain.", true);
+      }
+      e.target.value = "";
+    });
+    el("f-hapus-sampul").addEventListener("click", () => { tertunda = ""; lihat(); });
+
+    el("f-batal").addEventListener("click", () => { editing = null; kunciTab(); renderList(); });
+
+    const terbitkan = async (berikut) => {
+      if (pubApi) {
+        kunci(true);
+        pesan("Menyimpan…");
+        try {
+          await pubApi.publish(susunHalaman(berikut, false));
+          pesan("Tersimpan. Memuat ulang…");
+        } catch (err) {
+          const kode = err && err.code;
+          if (kode === "conflict") {
+            pesan("Ada versi yang lebih baru. Halaman dimuat ulang.");
+          } else if (KODE_BACA_SAJA.indexOf(kode) >= 0) {
+            pesan("Halaman ini hanya bisa dilihat dari akun ini, jadi perubahan tidak bisa disimpan.", true);
+          } else {
+            kunci(false);
+            sesuaikan();
+            pesan(
+              kode === "too_large" ? "Halaman jadi terlalu besar. Hapus beberapa sampul atau pakai foto yang lebih kecil." :
+              kode === "rate_limited" ? "Terlalu sering menyimpan. Tunggu sebentar lalu coba lagi." :
+              "Gagal menyimpan. Coba lagi sebentar lagi.",
+              true
+            );
+          }
+        }
+      } else if (lokal) {
+        state = berikut;
+        berubah = true;
+        editing = null;
+        kunciTab();
+        renderAll();
+      } else {
+        pesan("Penyimpanan tidak tersedia di tampilan ini.", true);
+      }
+    };
+
+    el("editor").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const salah = (t, kolom) => { pesan(t, true); if (kolom) kolom.focus(); };
+      const judul = el("f-judul").value.trim();
+      if (!judul) return salah("Judul wajib diisi.", el("f-judul"));
+      const status = el("f-status").value;
+      const oneshot = el("f-oneshot").checked;
+      let rilis = 0, total = null, sedang = null;
+      if (oneshot) {
+        rilis = status === "siap" ? 1 : 0;
+        total = 1;
+      } else {
+        const r = el("f-rilis").value.trim();
+        rilis = r === "" ? 0 : angka(r);
+        if (Number.isNaN(rilis)) return salah("Isi chapter dengan angka. Bonus boleh pakai titik atau koma, misalnya 5.5.", el("f-rilis"));
+        const t = el("f-total").value.trim();
+        if (t !== "") {
+          total = angka(t);
+          if (Number.isNaN(total) || total < 1) return salah("Total chapter harus angka, 1 atau lebih. Boleh pakai titik atau koma, misalnya 12.5.", el("f-total"));
+          if (Math.floor(rilis) > Math.floor(total)) return salah("Chapter terakhir melewati total. Bonus seperti " + Math.floor(total) + ".5 masih boleh.", el("f-rilis"));
+        }
+        if (status === "proses") {
+          const s = el("f-sedang").value.trim();
+          if (s !== "") {
+            sedang = angka(s);
+            if (Number.isNaN(sedang)) return salah("Chapter yang lagi dikerjakan harus angka, misalnya 6 atau 5.5.", el("f-sedang"));
+          }
+        }
+      }
+      const link = el("f-link").value.trim();
+      if (link && !/^https?:\/\//.test(link)) return salah("Link harus diawali http:// atau https://.", el("f-link"));
+
+      const item = {
+        id: m.id,
+        judul: judul,
+        karya: el("f-karya").value.trim(),
+        status: status,
+        rilis: rilis,
+        total: total,
+        sedang: sedang,
+        jenis: oneshot ? "oneshot" : "",
+        tahap: status === "proses" && !oneshot ? el("f-tahap").value : "",
+        catatan: el("f-catatan").value.trim(),
+        link: link,
+        sampul: tertunda === undefined ? (m.sampul || "") : tertunda,
+        diperbarui: hariIni()
+      };
+      const berikut = salin(state);
+      const ada = berikut.manga.findIndex((x) => x.id === item.id);
+      if (ada >= 0) berikut.manga[ada] = item; else berikut.manga.unshift(item);
+      terbitkan(berikut);
+    });
+
+    if (!baru) {
+      el("f-hapus").addEventListener("click", () => { el("ed-confirm").hidden = false; el("f-hapus").hidden = true; });
+      el("f-tidak").addEventListener("click", () => { el("ed-confirm").hidden = true; el("f-hapus").hidden = false; });
+      el("f-ya-hapus").addEventListener("click", () => {
+        const berikut = salin(state);
+        berikut.manga = berikut.manga.filter((x) => x.id !== m.id);
+        terbitkan(berikut);
+      });
+    }
+    el("f-judul").focus();
+  }
+
+  // ---- Render ----
+  const jumlah = (f) => f === "semua" ? state.manga.length : state.manga.filter((m) => m.status === f).length;
+  const fromHash = () => { const h = location.hash.slice(1); return ORDER.includes(h) ? h : "semua"; };
+  let filter = fromHash();
+  const kunciTab = () => tabsEl.classList.toggle("locked", !!editing);
+
+  function renderTabs() {
+    tabsEl.innerHTML = ORDER.map((f) =>
+      `<a class="tab" href="#${f}" data-f="${f}"><span>${STATUS[f].label}</span><span class="n">${jumlah(f)}</span></a>`
+    ).join("");
+  }
+  function renderStamp() {
+    const terbaru = urut()[0];
+    document.getElementById("stamp").textContent = terbaru && terbaru.diperbarui ? "Diperbarui " + tgl(terbaru.diperbarui) : "";
+  }
+  function renderBar() {
+    barEl.hidden = !canEdit;
+    if (!canEdit) return;
+    let h = "";
+    if (lokal && berubah) {
+      h += `<div class="pub"><p>Perubahan baru ada di layar ini. Unduh file barunya, lalu upload ke hosting (ganti index.html yang lama) supaya pembaca ikut melihatnya.</p><button type="button" class="btn solid" id="b-unduh">Unduh index.html</button></div>`;
+    }
+    h += `<button type="button" class="btn" id="b-atur" aria-pressed="${editMode ? "true" : "false"}">${editMode ? "Selesai atur" : "Atur judul"}</button>`;
+    if (editMode) h += `<button type="button" class="btn solid" id="b-baru">+ Judul baru</button><p class="fine">Ketuk Ubah di judul mana pun untuk mengganti status, chapter, atau sampul.</p>`;
+    barEl.innerHTML = h;
+  }
+  function renderList() {
+    tabsEl.querySelectorAll(".tab").forEach((a) => {
+      if (a.dataset.f === filter) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
+    hintEl.textContent = STATUS[filter].hint;
+    const rows = urut().filter((m) => filter === "semua" || m.status === filter);
+    const kosong = { id: "m" + Date.now().toString(36), judul: "", karya: "", status: "proses", rilis: 0, total: null, sedang: null, jenis: "", tahap: "", catatan: "", link: "", sampul: "" };
+    let html = "";
+    if (editing === "baru") html += `<li class="item editing" data-s="proses">${formHTML(true)}</li>`;
+    html += rows.length
+      ? rows.map((m) => m.id === editing
+          ? `<li class="item editing" data-s="${esc(m.status)}">${formHTML(false)}</li>`
+          : `<li class="item" data-s="${esc(m.status)}" style="--total:${Math.max(1, Math.ceil(m.total || 1))}">${itemHTML(m)}</li>`).join("")
+      : (editing === "baru" ? "" : `<li class="empty">Belum ada judul di kategori ini.</li>`);
+    listEl.innerHTML = html;
+    if (editing === "baru") pasangFormulir(kosong, true);
+    else if (editing) { const m = state.manga.find((x) => x.id === editing); if (m) pasangFormulir(m, false); }
+  }
+  function renderAll() { renderTabs(); renderStamp(); renderBar(); renderList(); }
+
+  tabsEl.addEventListener("click", (e) => {
+    const a = e.target.closest(".tab");
+    if (!a || editing) return;
+    e.preventDefault();
+    filter = a.dataset.f;
+    try { location.hash = filter; } catch (err) {}
+    renderList();
+  });
+  window.addEventListener("hashchange", () => { if (editing) return; filter = fromHash(); renderList(); });
+
+  listEl.addEventListener("click", (e) => {
+    const b = e.target.closest('[data-act="ubah"]');
+    if (!b || editing) return;
+    editing = b.dataset.id;
+    kunciTab();
+    renderList();
+  });
+  listEl.addEventListener("error", (e) => {
+    const t = e.target;
+    if (t && t.classList && t.classList.contains("pic")) t.remove();
+  }, true);
+
+  barEl.addEventListener("click", (e) => {
+    if (e.target.closest("#b-unduh")) {
+      unduh();
+    } else if (e.target.closest("#b-atur")) {
+      if (editing) return;
+      editMode = !editMode;
+      renderBar();
+      renderList();
+    } else if (e.target.closest("#b-baru")) {
+      if (editing) return;
+      editing = "baru";
+      kunciTab();
+      renderList();
+      const f = listEl.querySelector("#editor");
+      if (f && f.scrollIntoView) f.scrollIntoView({ block: "start" });
+    }
+  });
+
+  renderAll();
+
+  // ---- Siapa yang boleh mengatur ----
+  // Di Claude: hanya pemilik atau editor. Di hosting biasa: buka alamat dengan ?atur di belakangnya.
+  (async () => {
+    try {
+      const c = window.claude;
+      if (c && typeof c.use === "function") {
+        const [user, artifact] = await Promise.all([c.use("user"), c.use("artifact")]);
+        if (user && artifact && (await user.canEdit())) {
+          pubApi = artifact;
+          canEdit = true;
+          renderBar();
+          return;
+        }
+      }
+    } catch (err) { /* tampilan baca saja */ }
+    if (/[?&]atur(?:[=&]|$)/.test(location.search)) {
+      lokal = true;
+      canEdit = true;
+      renderBar();
+    }
+  })();
+})();
+/*@@JS-END@@*/</script>
+</body></html>
